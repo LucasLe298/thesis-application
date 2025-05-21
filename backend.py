@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import torch
 from transformers import RobertaTokenizer, RobertaModel
@@ -8,6 +10,7 @@ import torch.nn.functional as F
 import numpy as np
 import os
 import warnings
+from transformers import TrainingArguments
 
 # Suppress FutureWarning for clean_up_tokenization_spaces (optional)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -23,31 +26,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount static files
+app.mount("/static", StaticFiles(directory="."), name="static")
+
+# Serve index.html at root
+@app.get("/")
+async def read_root():
+    return FileResponse("index.html")
+
 # Ekman emotion mapping
 ekman_mapping = {
-    "anger": [2, 3, 10],
-    "disgust": [11],
-    "fear": [14, 19],
-    "joy": [17, 1, 4, 13, 15, 18, 20, 23, 21, 0, 8, 5],
-    "sadness": [25, 9, 12, 16, 24],
-    "surprise": [26, 22, 6, 7],
-    "neutral": [27]
+    "anger": [2, 3, 10], # anger, annoyance, disapproval*/
+    "disgust": [11], # disgust
+    "fear": [14, 19], # fear, nervousness
+    "joy": [17, 1, 4, 13, 15, 18, 20, 23, 21, 0, 8, 5], # joy, amusement, approval, excitement, gratitude, love, optimism, pride, relief, caring, admiration, desire
+    "sadness": [25, 9, 12, 16, 24], # sadness, disappointment, embarrassment, grief, remorse
+    "surprise": [26, 22, 6, 7], # surprise, realization, curiosity, confusion
+    "neutral": [27] # neutral
 }
 
-
-roberta_thresholds = [0.46, 0.54, 0.45, 0.40, 0.52, 0.42, 0.48]
-
+# Should use thresholds from your best performing fold
+roberta_thresholds = [0.36, 0.44, 0.37, 0.54, 0.39, 0.40, 0.225]
+                    # anger, disgust, fear, joy,  sadness, surprise, neutral
+                    # 0.31,    0.39,  0.54,  0.56,  0.52,     0.31,   0.20
 # RoBERTa + Attention model
 class RoBERTa_Attention(nn.Module):
-    def __init__(self, num_labels, freeze_layers=0, model_dir=None):
+    def __init__(self, num_labels, freeze_layers=0):
         super().__init__()
-        if model_dir:
-            self.roberta = RobertaModel.from_pretrained(model_dir, ignore_mismatched_sizes=True)
-        else:
-            self.roberta = RobertaModel.from_pretrained("roberta-base")
-        self.freeze_encoder_layers(freeze_layers)
-        self.attention = nn.Linear(768, 1)
-        self.fc = nn.Linear(768, num_labels)
+        self.roberta = RobertaModel.from_pretrained("roberta-base")
+        self.freeze_encoder_layers(freeze_layers)  # Freezes first 2 layers
+        self.attention = nn.Linear(768, 1)         # Attention mechanism
+        self.fc = nn.Linear(768, num_labels)       # Final classification layer
 
     def freeze_encoder_layers(self, num_layers):
         for i in range(num_layers):
@@ -72,7 +81,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ROBERTA_MODEL_CKPT = "./Roberta/fold_1/checkpoint-3255"
 ROBERTA_TOKENIZER_CKPT = "./Roberta/fold_1"
 roberta_tokenizer = RobertaTokenizer.from_pretrained(ROBERTA_TOKENIZER_CKPT)
-roberta_model = RoBERTa_Attention(num_labels=len(ekman_mapping), model_dir=ROBERTA_MODEL_CKPT)
+roberta_model = RoBERTa_Attention(num_labels=len(ekman_mapping))
 roberta_model.to(device)
 roberta_model.eval()
 

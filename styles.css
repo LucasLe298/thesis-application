@@ -20,6 +20,7 @@ body {
     color: var(--text-color);
     line-height: 1.0;
     min-height: 100vh;
+    transition: background 4.5s cubic-bezier(.4,2,.6,1), color 4.5s cubic-bezier(.4,2,.6,1);
 }
 
 body.theme-light {
@@ -32,6 +33,7 @@ body.theme-light {
     --shadow-color: rgba(0, 0, 0, 0.1);
     background: linear-gradient(135deg, #e3e9f7 0%, #46aad270 40%, #b3b8f7 100%) !important;
     color: var(--text-color);
+    transition: background 4.5s cubic-bezier(.4,2,.6,1), color 4.5s cubic-bezier(.4,2,.6,1);
 }
 
 body.theme-dark {
@@ -44,6 +46,7 @@ body.theme-dark {
     --shadow-color: rgba(0, 0, 0, 0.4);
     background: linear-gradient(135deg, #23263a 0%, #181a20 100%) !important;
     color: var(--text-color);
+    transition: background 4.5s cubic-bezier(.4,2,.6,1), color 4.5s cubic-bezier(.4,2,.6,1);
 }
 
 body.dark-mode {
@@ -56,6 +59,7 @@ body.dark-mode {
     --shadow-color: rgba(0, 0, 0, 0.4);
     background: linear-gradient(135deg, #2e3440 0%, #3b4252 100%) !important;
     color: var(--text-color);
+    transition: background 4.5s cubic-bezier(.4,2,.6,1), color 4.5s cubic-bezier(.4,2,.6,1);
 }
 
 body.dark-mode .container {
@@ -282,6 +286,7 @@ button:active {
     margin-bottom: 0.5rem;
     max-width: 90vw;
     text-align: left;
+    z-index: 1;
 }
 
 .emotion-tags {
@@ -355,15 +360,16 @@ button:active {
 }
 
 .emotion-bar {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 0.75rem;
     background: rgba(108,99,255,0.07);
     border-radius: 0.75rem;
     padding: 0.5rem 1rem;
-    position: relative;
-    overflow: hidden;
+    overflow: visible;
     min-width: 200px;
+    z-index: 2;
 }
 
 .emotion-bar-emoji {
@@ -623,5 +629,101 @@ button:active {
         margin-top: 0.5rem;
         flex-direction: row;
         justify-content: flex-start;
+    }
+}
+
+.emotion-tooltip {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: #fff;
+    color: #333;
+    border-radius: 8px;
+    padding: 0.7rem 1.2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    white-space: pre-line;
+    z-index: 1000;
+    font-size: 0.97rem;
+    min-width: 220px;
+    max-width: 320px;
+    pointer-events: none;
+    transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+    margin: 0;
+}
+
+.emotion-bar {
+    position: relative;
+    cursor: pointer;
+}
+
+.emotion-bar:hover .emotion-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Dark mode support for tooltips */
+body.dark-mode .emotion-tooltip {
+    background: #2e3440;
+    color: #eceff4;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+body.dark-mode .emotion-tooltip strong {
+    color: #88c0d0;
+}
+
+body.dark-mode .emotion-tooltip em {
+    color: #d8dee9;
+}
+
+body.dark-mode .emotion-tooltip span[style*="color:#555"] {
+    color: #a3be8c !important;
+}
+
+/* Add a small arrow to the tooltip */
+.emotion-tooltip::before {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 8px solid #fff;
+}
+
+/* Dark mode tooltip arrow */
+body.dark-mode .emotion-tooltip::before {
+    border-right-color: #2e3440;
+}
+
+/* Mobile responsiveness for tooltips */
+@media (max-width: 768px) {
+    .emotion-tooltip {
+        position: fixed;
+        left: 50%;
+        bottom: 20px;
+        top: auto;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: none;
+        margin: 0;
+    }
+    
+    .emotion-tooltip::before {
+        display: none;
+    }
+    
+    .emotion-bar:hover .emotion-tooltip {
+        visibility: hidden;
+        opacity: 0;
+    }
+    
+    .emotion-bar:active .emotion-tooltip {
+        visibility: visible;
+        opacity: 1;
     }
 } 

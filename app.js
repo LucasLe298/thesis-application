@@ -18,13 +18,52 @@ const userInput = document.getElementById('userInput');
 const chatContainer = document.getElementById('chatContainer');
 
 // API endpoint
-const API_URL = 'http://localhost:8000/predict';
+const API_URL = 'http://localhost:8001/predict';
 
 // Store chat history for reload
 let chatHistory = [];
 
 // Store reactions for each message
 let messageReactions = new Map();
+
+// Emotion details for tooltips
+const emotionDetails = {
+    anger: {
+        description: "A strong feeling of displeasure or hostility.",
+        related: ["anger", "annoyance", "disapproval"],
+        example: "I can't believe this happened again!"
+    },
+    disgust: {
+        description: "A feeling of revulsion or profound disapproval.",
+        related: ["disgust"],
+        example: "That was absolutely revolting."
+    },
+    fear: {
+        description: "An unpleasant emotion caused by the threat of danger or pain.",
+        related: ["fear", "nervousness"],
+        example: "I'm worried about the results."
+    },
+    joy: {
+        description: "A feeling of great pleasure and happiness.",
+        related: ["joy", "amusement", "approval", "excitement", "gratitude", "love", "optimism", "pride", "relief", "caring", "admiration", "desire"],
+        example: "I'm so happy for you!"
+    },
+    sadness: {
+        description: "A feeling of sorrow or unhappiness.",
+        related: ["sadness", "disappointment", "embarrassment", "grief", "remorse"],
+        example: "I feel so down today."
+    },
+    surprise: {
+        description: "A feeling of mild astonishment or shock.",
+        related: ["surprise", "realization", "curiosity", "confusion"],
+        example: "Wow, I didn't expect that!"
+    },
+    neutral: {
+        description: "A lack of strong emotion; impartial or calm.",
+        related: ["neutral"],
+        example: "It's just an ordinary day."
+    }
+};
 
 // Add a message to the chat
 function addMessage(text, isUser = true, emotions = null) {
@@ -45,12 +84,10 @@ function addMessage(text, isUser = true, emotions = null) {
         }
         messageDiv.appendChild(loadingDiv);
     } else {
-        // Elegant emotion bars for all 7 emotions
+        // Simple emotion bars for all emotions (no tooltip)
         const emotionBars = document.createElement('div');
         emotionBars.className = 'emotion-bars';
-        // Sort and map all 7 emotions in fixed order
-        const allEmotions = emotions;
-        allEmotions.forEach((emotion, idx) => {
+        emotions.forEach((emotion, idx) => {
             const bar = document.createElement('div');
             bar.className = 'emotion-bar';
             bar.setAttribute('data-emo', emotion.emotion);
@@ -86,7 +123,6 @@ function addMessage(text, isUser = true, emotions = null) {
     }
     
     chatContainer.appendChild(messageDiv);
-    
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 

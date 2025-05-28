@@ -34,13 +34,11 @@
 
             <form id="chatForm" class="chat-form">
                 <div class="input-group">
-                    <input 
-                        type="text" 
-                        id="userInput" 
-                        placeholder="Enter text here..." 
-                        required
-                        autocomplete="off"
-                    >
+                    <select id="usernameInput" required style="width: 120px; margin-right: 8px;">
+                        <option value="Emma">Emma</option>
+                        <option value="Lucas">Lucas</option>
+                    </select>
+                    <input type="text" id="userInput" placeholder="Enter text here..." required autocomplete="off">
                     <button type="submit">Send</button>
                 </div>
             </form>

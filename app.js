@@ -15,10 +15,12 @@ const reactionEmojis = ['❤️','👎', '👍', '👏','😍', '😮', '😢', 
 // DOM Elements
 const chatForm = document.getElementById('chatForm');
 const userInput = document.getElementById('userInput');
+const usernameInput = document.getElementById('usernameInput');
 const chatContainer = document.getElementById('chatContainer');
 
 // API endpoint
 const API_URL = 'http://localhost:8001/predict';
+const MESSAGES_URL = 'http://localhost:8001/messages';
 
 // Store chat history for reload
 let chatHistory = [];
@@ -26,44 +28,8 @@ let chatHistory = [];
 // Store reactions for each message
 let messageReactions = new Map();
 
-// Emotion details for tooltips
-const emotionDetails = {
-    anger: {
-        description: "A strong feeling of displeasure or hostility.",
-        related: ["anger", "annoyance", "disapproval"],
-        example: "I can't believe this happened again!"
-    },
-    disgust: {
-        description: "A feeling of revulsion or profound disapproval.",
-        related: ["disgust"],
-        example: "That was absolutely revolting."
-    },
-    fear: {
-        description: "An unpleasant emotion caused by the threat of danger or pain.",
-        related: ["fear", "nervousness"],
-        example: "I'm worried about the results."
-    },
-    joy: {
-        description: "A feeling of great pleasure and happiness.",
-        related: ["joy", "amusement", "approval", "excitement", "gratitude", "love", "optimism", "pride", "relief", "caring", "admiration", "desire"],
-        example: "I'm so happy for you!"
-    },
-    sadness: {
-        description: "A feeling of sorrow or unhappiness.",
-        related: ["sadness", "disappointment", "embarrassment", "grief", "remorse"],
-        example: "I feel so down today."
-    },
-    surprise: {
-        description: "A feeling of mild astonishment or shock.",
-        related: ["surprise", "realization", "curiosity", "confusion"],
-        example: "Wow, I didn't expect that!"
-    },
-    neutral: {
-        description: "A lack of strong emotion; impartial or calm.",
-        related: ["neutral"],
-        example: "It's just an ordinary day."
-    }
-};
+
+
 
 // Add a message to the chat
 function addMessage(text, isUser = true, emotions = null) {
@@ -72,7 +38,15 @@ function addMessage(text, isUser = true, emotions = null) {
     messageDiv.dataset.messageId = Date.now().toString();
     
     if (isUser) {
-        messageDiv.textContent = text;
+        // Modern animated dots loading
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'loading-dots';
+        for (let i = 0; i < 3; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'loading-dot';
+            loadingDiv.appendChild(dot);
+        }
+        messageDiv.appendChild(loadingDiv);
     } else if (emotions === 'loading') {
         // Modern animated dots loading
         const loadingDiv = document.createElement('div');
@@ -158,47 +132,31 @@ function removeLastBotMessage() {
 chatForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    const username = usernameInput.value.trim();
     const text = userInput.value.trim();
-    if (!text) return;
+    if (!username || !text) return;
     
     // Clear input
     userInput.value = '';
     
-    // Add user message
-    addMessage(text, true);
-    chatHistory.push({ text });
+    // Only push to chatHistory, do NOT call addMessage here
+    chatHistory.push({ username, text });
     
     // Show loading dots
     showLoadingDots();
     
     try {
         // Make API request
-        const response = await fetch(API_URL, {
+        await fetch(API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                text: text,
-                model: 'roberta'
-            })
+            body: JSON.stringify({ username, text })
         });
         
         // Remove loading dots
         removeLastBotMessage();
-        
-        if (!response.ok) {
-            throw new Error('Server error');
-        }
-        
-        const data = await response.json();
-        
-        // Sort all 7 emotions by probability (descending)
-        const sortedEmotions = data.all_probabilities
-            .slice()
-            .sort((a, b) => b.probability - a.probability);
-        addMessage(text, false, sortedEmotions);
-        chatHistory[chatHistory.length - 1].emotions = sortedEmotions;
         
     } catch (error) {
         removeLastBotMessage();
@@ -218,24 +176,14 @@ if (reloadBtn) {
         // Show loading dots
         showLoadingDots();
         try {
-            const response = await fetch(API_URL, {
+            await fetch(API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    text: last.text,
-                    model: 'roberta'
-                })
+                body: JSON.stringify({ username: last.username, text: last.text })
             });
             removeLastBotMessage();
-            if (!response.ok) throw new Error('Server error');
-            const data = await response.json();
-            const sortedEmotions = data.all_probabilities
-                .slice()
-                .sort((a, b) => b.probability - a.probability);
-            addMessage(last.text, false, sortedEmotions);
-            chatHistory[chatHistory.length - 1].emotions = sortedEmotions;
         } catch (error) {
             removeLastBotMessage();
             showError('Failed to connect to the server. Please try again.');
@@ -354,4 +302,75 @@ if (colorModeBtn) {
             colorModeIcon.innerHTML = '<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>';
         }
     });
-} 
+}
+
+const TOP_EMOTIONS = 7;
+
+let lastMessageId = null;
+
+function addMessageToChat(message) {
+    // Emma luôn bên trái, Lucas luôn bên phải
+    const isLucas = message.username === "Lucas";
+    const bubble = document.createElement('div');
+    bubble.className = isLucas ? 'bubble bubble-user' : 'bubble bubble-other';
+
+    // Username
+    const nameDiv = document.createElement('span');
+    nameDiv.className = 'username';
+    nameDiv.textContent = message.username;
+    bubble.appendChild(nameDiv);
+
+    // Message text
+    const textDiv = document.createElement('div');
+    textDiv.className = 'message-text';
+    textDiv.textContent = message.text;
+    bubble.appendChild(textDiv);
+
+    // Emotion bars (top N)
+    const emotionBars = document.createElement('div');
+    emotionBars.className = 'emotion-bars';
+    message.emotions.slice(0, TOP_EMOTIONS).forEach((emotion) => {
+        const bar = document.createElement('div');
+        bar.className = 'emotion-bar';
+        bar.setAttribute('data-emo', emotion.emotion);
+        // Emoji
+        const emoji = document.createElement('span');
+        emoji.className = 'emotion-bar-emoji';
+        emoji.textContent = emotionEmojis[emotion.emotion] || '';
+        bar.appendChild(emoji);
+        // Probability
+        const prob = document.createElement('span');
+        prob.className = 'emotion-bar-prob';
+        prob.textContent = `${Math.round(emotion.probability * 100)}%`;
+        bar.appendChild(prob);
+        emotionBars.appendChild(bar);
+    });
+    bubble.appendChild(emotionBars);
+
+    addReactionSystem(bubble);
+
+    chatContainer.appendChild(bubble);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+let lastMessageCount = 0;
+
+function appendNewMessages(messages) {
+    for (let i = lastMessageCount; i < messages.length; i++) {
+        addMessageToChat(messages[i]);
+    }
+    lastMessageCount = messages.length;
+}
+
+async function pollMessages() {
+    try {
+        const response = await fetch(MESSAGES_URL);
+        if (!response.ok) throw new Error('Failed to fetch messages');
+        const messages = await response.json();
+        appendNewMessages(messages);
+    } catch (err) {
+        // Xử lý lỗi nếu cần
+    }
+    setTimeout(pollMessages, 1500);
+}
+pollMessages(); 

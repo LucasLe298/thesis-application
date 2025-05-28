@@ -86,7 +86,11 @@ for fold_num, model_path in model_paths.items():
 
 # Input class
 class TextInput(BaseModel):
+    username: str
     text: str
+
+# In-memory message store
+chat_history = []
 
 # Prediction logic
 @torch.no_grad()
@@ -94,8 +98,6 @@ def predict_emotions(text, models, tokenizer, label_fold_map, thresholds, labels
     inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=512)
     inputs = {k: v.to(device) for k, v in inputs.items()}
     final_probs = []
-    above_threshold = []
-
     for idx, label in enumerate(labels):
         fold = label_fold_map[label]
         model = models[fold]
@@ -103,24 +105,28 @@ def predict_emotions(text, models, tokenizer, label_fold_map, thresholds, labels
         prob = torch.sigmoid(logits[0][idx]).item()
         threshold = thresholds[label]
         final_probs.append({"emotion": label, "probability": prob, "threshold": threshold})
-        if prob > threshold:
-            above_threshold.append({"emotion": label, "probability": prob, "threshold": threshold})
-
-    return {"all_probabilities": final_probs, "above_threshold": above_threshold}
+    # Sort by probability descending
+    final_probs = sorted(final_probs, key=lambda x: x["probability"], reverse=True)
+    return final_probs
 
 # API endpoint
 @app.post("/predict")
 async def predict(input_data: TextInput):
     try:
-        result = predict_emotions(input_data.text, models, tokenizer, label_fold_map, thresholds, labels)
-        return {
+        sorted_probs = predict_emotions(input_data.text, models, tokenizer, label_fold_map, thresholds, labels)
+        message = {
+            "username": input_data.username,
             "text": input_data.text,
-            "model": "roberta-multi-fold",
-            "all_probabilities": result["all_probabilities"],
-            "above_threshold": result["above_threshold"]
+            "emotions": sorted_probs
         }
+        chat_history.append(message)
+        return message
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/messages")
+async def get_messages():
+    return chat_history
 
 # Run locally
 if __name__ == "__main__":

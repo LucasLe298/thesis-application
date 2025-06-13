@@ -458,16 +458,19 @@ button:active {
 .emotion-bars {
     display: flex;
     flex-direction: row;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 0.12rem;
     margin-top: 0.4rem;
-    overflow-x: auto;
+    overflow-x: hidden;
     padding-bottom: 2px;
     padding-top: 2px;
     padding-left: 2px;
-    scrollbar-width: thin;
-    scrollbar-color: #b3d8fd #e0f0ff;
+    scrollbar-width: none;
     justify-content: center;
+}
+
+.emotion-bars::-webkit-scrollbar {
+    display: none;
 }
 
 .emotion-bar {
@@ -500,7 +503,7 @@ button:active {
 }
 
 .emotion-bar-label {
-    display: none;
+    display: inline;
 }
 
 .emotion-bar-prob {
@@ -737,7 +740,7 @@ button:active {
     visibility: hidden;
     opacity: 0;
     position: absolute;
-    left: calc(100% + 10px);
+    left: 100%;
     top: 50%;
     transform: translateY(-50%);
     background: #fff;
@@ -748,16 +751,13 @@ button:active {
     white-space: pre-line;
     z-index: 1000;
     font-size: 0.97rem;
-    min-width: 220px;
+    min-width: 180px;
     max-width: 320px;
     pointer-events: none;
     transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
-    margin: 0;
-}
-
-.emotion-bar {
-    position: relative;
-    cursor: pointer;
+    margin-left: 12px;
+    word-break: break-word;
+    text-align: left;
 }
 
 .emotion-bar:hover .emotion-tooltip {
@@ -765,26 +765,6 @@ button:active {
     opacity: 1;
 }
 
-/* Dark mode support for tooltips */
-body.dark-mode .emotion-tooltip {
-    background: #2e3440;
-    color: #eceff4;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
-
-body.dark-mode .emotion-tooltip strong {
-    color: #88c0d0;
-}
-
-body.dark-mode .emotion-tooltip em {
-    color: #d8dee9;
-}
-
-body.dark-mode .emotion-tooltip span[style*="color:#555"] {
-    color: #a3be8c !important;
-}
-
-/* Add a small arrow to the tooltip */
 .emotion-tooltip::before {
     content: '';
     position: absolute;
@@ -796,37 +776,13 @@ body.dark-mode .emotion-tooltip span[style*="color:#555"] {
     border-right: 8px solid #fff;
 }
 
-/* Dark mode tooltip arrow */
-body.dark-mode .emotion-tooltip::before {
-    border-right-color: #2e3440;
+body.dark-mode .emotion-tooltip {
+    background: #2e3440;
+    color: #eceff4;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
-
-/* Mobile responsiveness for tooltips */
-@media (max-width: 768px) {
-    .emotion-tooltip {
-        position: fixed;
-        left: 50%;
-        bottom: 20px;
-        top: auto;
-        transform: translateX(-50%);
-        width: 90%;
-        max-width: none;
-        margin: 0;
-    }
-    
-    .emotion-tooltip::before {
-        display: none;
-    }
-    
-    .emotion-bar:hover .emotion-tooltip {
-        visibility: hidden;
-        opacity: 0;
-    }
-    
-    .emotion-bar:active .emotion-tooltip {
-        visibility: visible;
-        opacity: 1;
-    }
+body.dark-mode .emotion-tooltip::before {
+    border-right: 8px solid #2e3440;
 }
 
 /* Dark Theme Overrides */

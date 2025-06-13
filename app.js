@@ -28,8 +28,16 @@ let chatHistory = [];
 // Store reactions for each message
 let messageReactions = new Map();
 
-
-
+// Ekman mapping for tooltip
+const ekmanDescriptions = {
+    anger: "anger, annoyance, disapproval",
+    disgust: "disgust",
+    fear: "fear, nervousness",
+    joy: "joy, amusement, approval, excitement, gratitude, love, optimism, pride, relief, caring, admiration, desire",
+    sadness: "sadness, disappointment, embarrassment, grief, remorse",
+    surprise: "surprise, realization, curiosity, confusion",
+    neutral: "neutral"
+};
 
 // Add a message to the chat
 function addMessage(text, isUser = true, emotions = null) {
@@ -61,15 +69,12 @@ function addMessage(text, isUser = true, emotions = null) {
         // Simple emotion bars for all emotions (no tooltip)
         const emotionBars = document.createElement('div');
         emotionBars.className = 'emotion-bars';
-        emotions.forEach((emotion, idx) => {
+        // Lọc chỉ các nhãn được bật 1 (probability > threshold)
+        const selectedEmotions = emotions.filter(emotion => emotion.probability > emotion.threshold);
+        selectedEmotions.forEach((emotion, idx) => {
             const bar = document.createElement('div');
             bar.className = 'emotion-bar';
             bar.setAttribute('data-emo', emotion.emotion);
-            // Bar fill
-            const fill = document.createElement('div');
-            fill.className = 'emotion-bar-fill';
-            fill.style.width = '0%';
-            bar.appendChild(fill);
             // Emoji
             const emoji = document.createElement('span');
             emoji.className = 'emotion-bar-emoji';
@@ -79,17 +84,13 @@ function addMessage(text, isUser = true, emotions = null) {
             const label = document.createElement('span');
             label.className = 'emotion-bar-label';
             label.textContent = emotion.emotion.charAt(0).toUpperCase() + emotion.emotion.slice(1);
+            // Tooltip
+            const tooltip = document.createElement('span');
+            tooltip.className = 'emotion-tooltip';
+            tooltip.textContent = ekmanDescriptions[emotion.emotion] || '';
+            label.appendChild(tooltip);
             bar.appendChild(label);
-            // Probability
-            const prob = document.createElement('span');
-            prob.className = 'emotion-bar-prob';
-            prob.textContent = `${Math.round(emotion.probability * 100)}%`;
-            bar.appendChild(prob);
             emotionBars.appendChild(bar);
-            // Animate bar fill after DOM insert
-            setTimeout(() => {
-                fill.style.width = `${Math.round(emotion.probability * 100)}%`;
-            }, 100 + idx * 80);
         });
         messageDiv.appendChild(emotionBars);
         // Insert reaction system after emotion bars
@@ -329,7 +330,9 @@ function addMessageToChat(message) {
     // Emotion bars (top N)
     const emotionBars = document.createElement('div');
     emotionBars.className = 'emotion-bars';
-    message.emotions.slice(0, TOP_EMOTIONS).forEach((emotion) => {
+    // Lọc chỉ các nhãn được bật 1 (probability > threshold)
+    const selectedEmotions = message.emotions.filter(e => e.probability > e.threshold);
+    selectedEmotions.forEach((emotion) => {
         const bar = document.createElement('div');
         bar.className = 'emotion-bar';
         bar.setAttribute('data-emo', emotion.emotion);
@@ -338,11 +341,16 @@ function addMessageToChat(message) {
         emoji.className = 'emotion-bar-emoji';
         emoji.textContent = emotionEmojis[emotion.emotion] || '';
         bar.appendChild(emoji);
-        // Probability
-        const prob = document.createElement('span');
-        prob.className = 'emotion-bar-prob';
-        prob.textContent = `${Math.round(emotion.probability * 100)}%`;
-        bar.appendChild(prob);
+        // Label
+        const label = document.createElement('span');
+        label.className = 'emotion-bar-label';
+        label.textContent = emotion.emotion.charAt(0).toUpperCase() + emotion.emotion.slice(1);
+        // Tooltip
+        const tooltip = document.createElement('span');
+        tooltip.className = 'emotion-tooltip';
+        tooltip.textContent = ekmanDescriptions[emotion.emotion] || '';
+        label.appendChild(tooltip);
+        bar.appendChild(label);
         emotionBars.appendChild(bar);
     });
     bubble.appendChild(emotionBars);
